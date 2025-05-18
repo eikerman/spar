@@ -64,6 +64,9 @@ class HumanoidEnv(gym.Env):
         ob_uids = p.loadMJCF("mjcf/humanoid.xml")
         self.humanoid_id = ob_uids[1]
 
+        # Add a sword
+
+
         # Setup dynamics
         p.changeDynamics(self.humanoid_id, -1, linearDamping=0, angularDamping=0)
 
@@ -75,6 +78,23 @@ class HumanoidEnv(gym.Env):
             joint_type = info[2]
             if joint_type == p.JOINT_PRISMATIC or joint_type == p.JOINT_REVOLUTE:
                 self.joint_ids.append(j)
+
+        position = p.getBasePositionAndOrientation(self.humanoid_id)[0]
+        sword_length = 1.0
+        sword = p.createMultiBody(
+            baseMass=1.0,
+            basePosition=[position[0] + 0.5, position[1], position[2]],
+            baseCollisionShapeIndex=p.createCollisionShape(p.GEOM_BOX, halfExtents=[sword_length / 2, 0.05, 0.01]),
+            baseVisualShapeIndex=p.createVisualShape(p.GEOM_BOX, halfExtents=[sword_length / 2, 0.05, 0.01],
+                                                     rgbaColor=[0.8, 0.8, 0.8, 1])
+        )
+
+        p.createConstraint(
+            self.humanoid_id, -1, sword, -1, p.JOINT_FIXED,
+            jointAxis=[0, 0, 0],
+            parentFramePosition=[0.3, 0, 0],
+            childFramePosition=[-sword_length / 2 - 0.1, 0, 0]
+        )
 
         # Reset counters and state
         self.current_step = 0
